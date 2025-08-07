@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Timbales</title>
+  <link rel="icon" type="image/jpeg" href="Tienda.jpg">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #e6f0ff;
+      padding: 20px;
+      color: #002b5c;
+    }
+
+    h1, h2 {
+      color: #0047ab;
+      border-bottom: 2px solid #cce0ff;
+      padding-bottom: 5px;
+    }
+
+    input, select, button {
+      margin: 5px 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #b3d1ff;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #0047ab;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0066cc;
+    }
+
+    .section {
+      background: #ffffff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .product {
+      background: #f0f8ff;
+      padding: 15px;
+      border: 1px solid #b3d1ff;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    .presentation-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .presentation-inputs input {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .presentacion-title {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #0047ab;
+    }
+
+    #login {
+      max-width: 400px;
+      margin: 0 auto 30px auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    #admin input, #admin select {
+      max-width: 400px;
+    }
+
+    @media (max-width: 600px) {
+      .presentation-inputs {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Timbales Administración</h1>
+
+ 
+  <div id="login">
+    <input type="email" id="email" placeholder="Correo">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="loginBtn">Iniciar sesión</button>
+  </div>
+
+  <div id="admin" style="display:none">
+    <div class="section">
+      <h2>Agregar Producto</h2>
+      <input type="text" id="nombre" placeholder="Nombre">
+      <input type="text" id="descripcion" placeholder="Descripción">
+
+      <select id="categoriaPadre" onchange="actualizarSubcategorias()">
+        <option value="">Selecciona categoría principal</option>
+        <option value="timbales">Timbal</option>
+        <option value="bebidas">Bebidas</option>
+        <option value="horneados">Horneado</option>
+      </select>
+
+      <select id="subcategoria">
+        <option value="">Selecciona subcategoría</option>
+      </select>
+
+      <select id="sucursal"></select>
+      <br>
+      <select id="presentacionSelect">
+         <option value="">Sin presentación</option>
+        <option value="mini">Mini</option>
+        <option value="clasico">Clásico</option>
+        <option value="mini fiesta">Mini Fiesta</option>
+        <option value="fiesta">Fiesta</option>
+        <option value="pay">Pay</option>
+        <option value="sencillo">Sencillo</option>
+        <option value="doble">Doble</option>
+        <option value="chico">Chico</option>
+        <option value="grande">Grande</option>
+        <option value="Estandar">Estandar</option>
+        <option value="Sin presentacion">sin presentacion</option>
+      </select>
+      <input type="number" id="precioPresentacion" placeholder="Precio">
+      <input type="number" id="stockPresentacion" placeholder="Stock">
+      <button onclick="agregarPresentacion()">Agregar Presentación</button>
+      <div id="presentacionesPreview"></div>
+      <button onclick="agregarProducto()">Guardar Producto</button>
+    </div>
+
+    <div class="section">
+      <h2>Filtrar Productos</h2>
+      <select id="filtroSucursal" onchange="filtrarProductos()"></select>
+      <select id="filtroCategoria" onchange="filtrarProductos()"></select>
+    </div>
+
+    <div class="section">
+      <h2>Productos Existentes</h2>
+      <div id="productos"></div>
+    </div>
+  </div>
+
+
+</body>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+
+
+  <script>
+    const subcategoriasPorCategoria = {
+      "timbales": ["dulce", "frutal", "hazlo especial"],
+      "bebidas": ["bebidas hot", "bebidas ice", "timbal frappe"],
+      "horneados": ["timbal waflizza", "timbal waffle", "timbal galleton"]
+    };
+
+    function actualizarSubcategorias() {
+      const categoria = document.getElementById("categoriaPadre").value;
+      const subcategoriaSelect = document.getElementById("subcategoria");
+      subcategoriaSelect.innerHTML = '<option value="">Selecciona subcategoría</option>';
+      if (subcategoriasPorCategoria[categoria]) {
+        subcategoriasPorCategoria[categoria].forEach(sub => {
+          const opt = document.createElement("option");
+          opt.value = sub;
+          opt.textContent = sub.charAt(0).toUpperCase() + sub.slice(1);
+          subcategoriaSelect.appendChild(opt);
+        });
+      }
+    }
+  </script>
+ 
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkRkkeQB7jXnHu7Kn7wKBHoty1Ol2BFn4",
+      authDomain: "pru-viki-tacos.firebaseapp.com",
+      projectId: "pru-viki-tacos",
+      storageBucket: "pru-viki-tacos.firebasestorage.app",
+      messagingSenderId: "1017400139609",
+      appId: "1:1017400139609:web:4e979c7d1f9b1ff377b648"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let productosOriginal = [];
+    let presentaciones = {};
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById("login").style.display = "none";
+        document.getElementById("admin").style.display = "block";
+        await cargarProductos();
+      } catch (e) {
+        alert("Error al iniciar sesión: " + e.message);
+      }
+    });
+
+    function agregarPresentacion() {
+  const tipo = document.getElementById("presentacionSelect").value;
+  if (!tipo) return; // Evita agregar si es "Sin presentación"
+
+  const precio = parseFloat(document.getElementById("precioPresentacion").value);
+  const stock = parseInt(document.getElementById("stockPresentacion").value);
+  if (!isNaN(precio) && !isNaN(stock)) {
+    presentaciones[tipo] = { precio, stock };
+    mostrarPresentaciones();
+  }
+}
+
+
+    
+
+    function mostrarPresentaciones() {
+      const contenedor = document.getElementById("presentacionesPreview");
+      contenedor.innerHTML = "<strong>Presentaciones:</strong><br>";
+      for (let key in presentaciones) {
+        contenedor.innerHTML += `${key}: $${presentaciones[key].precio} (${presentaciones[key].stock} disponibles)<br>`;
+      }
+    }
+
+    async function agregarProducto() {
+      const nombre = document.getElementById("nombre").value.trim();
+      const descripcion = document.getElementById("descripcion").value.trim();
+      const categoria = document.getElementById("categoriaPadre").value;
+      const subcategoria = document.getElementById("subcategoria").value;
+      const sucursal = document.getElementById("sucursal").value;
+
+      if (!nombre || !categoria || !sucursal) return alert("Faltan campos");
+
+      const precios_adicionales = {};
+      let totalStock = 0;
+      for (let key in presentaciones) {
+        precios_adicionales[key] = {
+          precio: presentaciones[key].precio,
+          stock: presentaciones[key].stock
+        };
+        totalStock += presentaciones[key].stock;
+      }
+
+      await addDoc(collection(db, "productos"), {
+        nombre,
+        descripcion,
+        categoria,
+        subcategoria,
+        sucursal,
+        precios_adicionales,
+        
+      });
+
+      presentaciones = {};
+      mostrarPresentaciones();
+      await cargarProductos();
+    }
+
+    async function cargarProductos() {
+      const cont = document.getElementById("productos");
+      cont.innerHTML = "";
+      productosOriginal = [];
+
+      const querySnapshot = await getDocs(collection(db, "productos"));
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        productosOriginal.push({ id: docSnap.id, ...data });
+      });
+
+      poblarFiltros();
+      mostrarProductos(productosOriginal);
+    }
+
+    function mostrarProductos(lista) {
+      const cont = document.getElementById("productos");
+      cont.innerHTML = "";
+      lista.forEach(p => {
+        let html = `<div class="product">
+          <strong>${p.nombre}</strong><br>
+          Categoría: ${p.categoria}<br>
+          Subcategoría: ${p.subcategoria || '-'}<br>
+          Sucursal: ${p.sucursal}<br>
+          Descripción: ${p.descripcion}<br>
+          <div class="presentacion-title">Presentaciones (Precio / Stock):</div>`;
+
+        for (let key in p.precios_adicionales) {
+          const item = p.precios_adicionales[key];
+          html += `
+            <div class="presentation-inputs">
+              ${key}: 
+              $<input type="number" id="p_${p.id}_${key}" value="${item.precio}">
+              Stock: <input type="number" id="s_${p.id}_${key}" value="${item.stock}">
+              <button onclick="guardarCambios('${p.id}', '${key}')">Guardar</button>
+            </div>`;
+        }
+
+        html += `<button onclick="eliminarProducto('${p.id}')">Eliminar Producto</button></div>`;
+        cont.innerHTML += html;
+      });
+    }
+
+   window.guardarCambios = async function(id, key) {
+  const precio = parseFloat(document.getElementById(`p_${id}_${key}`).value);
+  const stock = parseInt(document.getElementById(`s_${id}_${key}`).value);
+  if (isNaN(precio) || isNaN(stock)) return alert("Datos inválidos");
+
+  const ref = doc(db, "productos", id);
+  const snap = await getDoc(ref);
+  const data = snap.data();
+  if (!data) return alert("Producto no encontrado");
+
+  data.precios_adicionales[key] = { precio, stock };
+
+  await updateDoc(ref, {
+    precios_adicionales: data.precios_adicionales
+    // ❌ Ya no subas el campo 'stock'
+  });
+
+  alert("Actualizado correctamente");
+}
+
+
+    window.eliminarProducto = async function(id) {
+      await deleteDoc(doc(db, "productos", id));
+      await cargarProductos();
+    };
+
+    function poblarFiltros() {
+      const catSet = new Set();
+      const sucSet = new Set();
+      productosOriginal.forEach(p => {
+        catSet.add(p.categoria);
+        sucSet.add(p.sucursal);
+      });
+
+      const filtroCategoria = document.getElementById("filtroCategoria");
+      const filtroSucursal = document.getElementById("filtroSucursal");
+      const selectSuc = document.getElementById("sucursal");
+
+      filtroCategoria.innerHTML = "<option value=''>Todas las categorías</option>";
+      filtroSucursal.innerHTML = "<option value=''>Todas las sucursales</option>";
+      selectSuc.innerHTML = "<option value=''>Selecciona sucursal</option>";
+
+      for (let cat of catSet) {
+        filtroCategoria.innerHTML += `<option value="${cat}">${cat}</option>`;
+      }
+
+      for (let suc of sucSet) {
+        filtroSucursal.innerHTML += `<option value="${suc}">${suc}</option>`;
+        selectSuc.innerHTML += `<option value="${suc}">${suc}</option>`;
+      }
+    }
+
+    window.filtrarProductos = function () {
+      const cat = document.getElementById("filtroCategoria").value;
+      const suc = document.getElementById("filtroSucursal").value;
+      let filtrados = productosOriginal;
+
+      if (cat) filtrados = filtrados.filter(p => p.categoria === cat);
+      if (suc) filtrados = filtrados.filter(p => p.sucursal === suc);
+
+      mostrarProductos(filtrados);
+    };
+
+    window.agregarPresentacion = agregarPresentacion;
+    window.agregarProducto = agregarProducto;
+  </script>
+</body>
+</html>
